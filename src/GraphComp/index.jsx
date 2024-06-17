@@ -5,6 +5,8 @@ import set from "lodash/set"
 
 import { format as d3format } from "d3-format"
 
+
+
 import {
   SourceSelector,
   ViewSelector,
@@ -24,6 +26,17 @@ import {
 
 const IntFormat = d3format(",d");
 
+const parseJSON = (value) => {
+  let json = {}
+  try {
+    json = JSON.parse(value) 
+  } catch (e) {
+    console.log('no parse')
+  }
+
+  return json
+}
+
 const InitialState = {
   activeSource: undefined,
   activeView: undefined,
@@ -34,7 +47,8 @@ const InitialState = {
 }
 
 const getInitialState = (value = "{}") => {
-  const parsed = JSON.parse(value);
+  console.log('value', value, typeof value)
+  const parsed = parseJSON(value) || {};
   return {
     activeSource: get(parsed, "activeSource", undefined),
     activeView: get(parsed, "activeView", undefined),
