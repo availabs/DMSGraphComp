@@ -1,9 +1,10 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import { dmsPageFactory, registerDataType } from "./modules/dms/src"
+import {  dmsPageFactory, registerDataType, Selector, adminConfig, registerComponents } from "./modules/dms/src/"
+registerDataType("selector", Selector)
 
-import pageConfig from './modules/dms/src/patterns/page/siteConfig'
-import Selector, { registerComponents } from "./modules/dms/src/patterns/page/selector"
+import {siteConfig} from './modules/dms/src/patterns/page/siteConfig'
+
 
 import Routes from "./Routes"
 import Layout from '~/layout/ppdaf-layout'
@@ -22,7 +23,7 @@ registerComponents({
 
 registerDataType("selector", Selector);
 
-const temp = pageConfig({
+const temp = siteConfig({
   app: "dms-docs", type: "main", baseUrl: ""
 })
 
