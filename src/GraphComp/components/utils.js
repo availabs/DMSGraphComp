@@ -134,6 +134,6 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, pgEnv })
         return a;
       }, []);
 
-    return [length, data];
+    return [data, length];
   }, [falcorCache, pgEnv, activeView]);
 }
