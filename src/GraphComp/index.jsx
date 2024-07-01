@@ -2,6 +2,8 @@ import React from "react"
 
 import get from "lodash/get"
 import set from "lodash/set"
+import merge from "lodash/merge"
+import isEqual from "lodash/isEqual"
 
 import { format as d3format } from "d3-format"
 
@@ -10,12 +12,12 @@ import {
   ViewSelector,
 
   GraphTypeSelector,
-  GraphDataGenerators,
   GraphOptionsEditor,
   GraphComponent,
   DefaultPalette,
 
-  GraphOptions,
+  GraphTypes,
+
   XAxisSelector,
   YAxisSelector,
   useGetViewData,
@@ -27,21 +29,23 @@ const IntFormat = d3format(",d");
 const InitialState = {
   activeSource: undefined,
   activeView: undefined,
-  activeGraphType: GraphOptions[0],
+  activeGraphType: GraphTypes[0],
   xAxisColumn: undefined,
   yAxisColumns: [],
   graphFormat: getNewGraphFormat()
 }
 
-const getInitialState = (value = "{}") => {
-  const parsed = JSON.parse(value);
+const getInitialState = value => {
+
+  const { state, viewData } = JSON.parse(value || "{}");
+
   return {
-    activeSource: get(parsed, "activeSource", undefined),
-    activeView: get(parsed, "activeView", undefined),
-    activeGraphType: get(parsed, "activeGraphType", GraphOptions[0]),
-    xAxisColumn: get(parsed, "xAxisColumn", undefined),
-    yAxisColumns: get(parsed, "yAxisColumns", []),
-    graphFormat: get(parsed, "graphFormat", getNewGraphFormat())
+    activeSource: get(state, "activeSource", undefined),
+    activeView: get(state, "activeView", undefined),
+    activeGraphType: get(state, "activeGraphType", GraphTypes[0]),
+    xAxisColumn: get(state, "xAxisColumn", undefined),
+    yAxisColumns: get(state, "yAxisColumns", []),
+    graphFormat: get(state, "graphFormat", getNewGraphFormat())
   }
 }
 
@@ -65,7 +69,7 @@ const Reducer = (state, action) => {
           ...state,
           activeGraphType: payload.graph
         }
-        if (payload.graph.type !== "Bar Graph") {
+        if ((payload.graph.type === "Line Graph") && (nextState.graphFormat.colors.type !== "palette")) {
           nextState.graphFormat = {
             ...nextState.graphFormat,
             colors: {
@@ -105,11 +109,18 @@ const Reducer = (state, action) => {
           })
         }
       }
-      case "edit-graph-format":
+      case "edit-graph-format": {
+        const merged = merge({}, state.graphFormat);
+        payload.paths.forEach(([path, value]) => {
+          set(merged, path, value);
+        })
         return {
           ...state,
-          graphFormat: payload.format
+          graphFormat: merged
         }
+      }
+      case "set-state":
+        return payload.state
     default:
       return state;
   }
@@ -163,10 +174,17 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     })
   }, []);
 
-  const editGraphFormat = React.useCallback(format => {
+  const editGraphFormat = React.useCallback(paths => {
     dispatch({
       type: "edit-graph-format",
-      format
+      paths
+    })
+  }, []);
+
+  const setState = React.useCallback(state => {
+    dispatch({
+      type: "set-state",
+      state
     })
   }, []);
 
@@ -185,18 +203,41 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
 
   const [viewData, viewDataLength] = useGetViewData({ pgEnv, activeView, xAxisColumn, yAxisColumns });
 
-  const [graphData, dataDomain] = React.useMemo(() => {
-    if (!(viewData.length && xAxisColumn && yAxisColumns.length)) {
-      return [{}, []];
+  const dataDomain = React.useMemo(() => {
+    return viewData.map(vd => vd.value);
+  }, [viewData]);
+
+  const okToSave = React.useMemo(() => {
+    const { state: savedState, viewData: savedData } = JSON.parse(value || "{}");
+    return Boolean(viewData.length) && (!isEqual(savedState, state) || !isEqual(viewData, savedData));
+  }, [state, viewData, value]);
+
+  const doOnChange = React.useCallback(e => {
+    if (!okToSave) return;
+    onChange(JSON.stringify({ state, viewData }));
+  }, [onChange, state, viewData, okToSave]);
+
+  const canRevert = React.useMemo(() => {
+    if (!value) return false;
+    const parsed = JSON.parse(value);
+    const valueState = get(parsed, "state", null);
+    return !isEqual(valueState, state);
+  }, [value, state]);
+
+  const revertChanges = React.useCallback(e => {
+    if (!canRevert) return;
+    const parsed = JSON.parse(value);
+    const valueState = get(parsed, "state", null);
+    if (valueState) {
+      setState(valueState);
     }
-    const dataGenerator = GraphDataGenerators[activeGraphType.dataGenerator];
-    return dataGenerator(viewData, xAxisColumn, yAxisColumns, graphFormat.colors);
-  }, [viewData, activeGraphType, xAxisColumn, yAxisColumns, graphFormat.colors]);
+  }, [setState, value, canRevert]);
 
   return (
     <div className="bg-gray-200 p-4 grid grid-cols-1 gap-2">
 
       <SourceSelector pgEnv={ pgEnv }
+        activeSource={ activeSource }
         setActiveSource={ setActiveSource }/>
 
       <ViewSelector pgEnv={ pgEnv }
@@ -227,8 +268,46 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
       <GraphComponent
         graphFormat={ graphFormat }
         activeGraphType={ activeGraphType }
-        graphData={ graphData }
         viewData={ viewData }/>
+
+      <div className="grid grid-cols-12">
+        <div className="col-span-3 flex items-center justify-start">
+        </div>
+        <div className="col-span-6">
+          <button onClick={ doOnChange }
+            className={ `
+              w-full py-4 rounded
+              bg-white text-green-400
+              hover:bg-green-300
+              hover:text-white
+              disabled:text-red-400
+              disabled:opacity-50
+              disabled:hover:bg-white
+              disabled:cursor-not-allowed
+              font-bold text-xl
+            ` }
+            disabled={ !okToSave }
+          >
+            { okToSave ? "Save Graph" : "Nothing to Save" }
+          </button>
+        </div>
+        <div className="col-span-3 flex items-center justify-center">
+          <button onClick={ revertChanges }
+            className={ `
+              py-1 px-6 rounded bg-white
+              hover:bg-gray-300
+              hover:text-white
+              disabled:opacity-50
+              disabled:hover:bg-white
+              disabled:hover:text-current
+              disabled:cursor-not-allowed
+            ` }
+            disabled={ !canRevert }
+          >
+            Revert Changes
+          </button>
+        </div>
+      </div>
 
       <GraphOptionsEditor
         format={ graphFormat }
@@ -241,9 +320,29 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
 }
 
 const ViewComp = ({ value }) => {
+
+  const { state, viewData } = React.useMemo(() => {
+    return JSON.parse(value || "{}");
+  }, [value]);
+
+  if (!state) {
+    return null;
+  }
+
+  const {
+    graphFormat,
+    activeGraphType
+  } = state;
+
+  if (!get(viewData, "length", 0)) {
+    return null;
+  }
+
   return (
-    <div>
-    </div>
+    <GraphComponent
+      graphFormat={ graphFormat }
+      activeGraphType={ activeGraphType }
+      viewData={ viewData }/>
   )
 }
 

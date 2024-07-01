@@ -91,49 +91,85 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, pgEnv })
 
   const [dataLength, setDataLength] = React.useState(0);
 
+  const options = React.useMemo(() => {
+    if (!xAxisColumn) return "{}";
+    return JSON.stringify({
+      aggregatedLen: true,
+      groupBy: [xAxisColumn.name]
+    });
+  }, [xAxisColumn]);
+
+  const yColumnsMap = React.useMemo(() => {
+    return yAxisColumns.reduce((a, c) => {
+      const { name, aggMethod } = c;
+      a[`${ aggMethod }(${ name }) AS ${ name }`] = name;
+      return a;
+    }, {});
+  }, [yAxisColumns]);
+
   React.useEffect(() => {
     if (!activeView) return;
 
     const vid = activeView.view_id;
 
-    falcor.get(["dama", pgEnv, "viewsbyId", vid, "data", "length"]);
-  }, [falcor, pgEnv, activeView]);
+    falcor.get(["dama", pgEnv, "viewsbyId", vid, "options", options, "length"]);
+  }, [falcor, pgEnv, activeView, options]);
 
   React.useEffect(() => {
     if (!activeView) return;
 
     const vid = activeView.view_id;
 
-    const length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "data", "length"], 0);
+    const length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
 
     const columns = [
       get(xAxisColumn, "name", null),
-      ...yAxisColumns.map(c => c.name)
+      ...Object.keys(yColumnsMap)
     ].filter(Boolean);
 
     if (length && !strictNaN(length) && columns.length) {
-      falcor.chunk([
-        "dama", pgEnv, "viewsbyId", vid, "databyIndex", d3range(length), columns
+      falcor.get([
+        "dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", d3range(length), columns
       ]);
     }
-  }, [falcor, falcorCache, pgEnv, activeView, xAxisColumn, yAxisColumns]);
+  }, [falcor, falcorCache, pgEnv, activeView, xAxisColumn, options, yColumnsMap]);
 
   return React.useMemo(() => {
-    if (!activeView) return [0, []];
+    if (!activeView) return [[], 0];
+    if (!xAxisColumn) return [[], 0];
 
     const vid = activeView.view_id;
 
-    const length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "data", "length"], 0);
+    const length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
 
     const data = d3range(length)
       .reduce((a, c) => {
-        const ref = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "databyIndex", c, "value"], []);
-        if (ref?.length) {
-          a.push(get(falcorCache, ref));
+        const data = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", c]);
+        if (data) {
+          for (const key in yColumnsMap) {
+            a.push({
+              index: data[xAxisColumn.name],
+              value: +data[key],
+              type: yColumnsMap[key]
+            })
+          }
         }
         return a;
       }, []);
 
+    const { sortMethod } = xAxisColumn;
+
+    if (sortMethod !== "none") {
+      data.sort((a, b) => {
+        switch (sortMethod) {
+          case "ascending":
+            return String(a.index).localeCompare(String(b.index));
+          case "descending":
+            return String(b.index).localeCompare(String(a.index));
+        }
+      })
+    }
+
     return [data, length];
-  }, [falcorCache, pgEnv, activeView]);
+  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap]);
 }

@@ -1,13 +1,15 @@
 import React from "react"
 
+import get from "lodash/get"
+
 import { Select } from "~/modules/avl-components/src"
 
 import { useGetSources } from "./utils"
 
-export const SourceSelector = ({ setActiveSource, pgEnv }) => {
+export const SourceSelector = ({ activeSource, setActiveSource, pgEnv }) => {
   const sources = useGetSources({ pgEnv });
 
-  const [sourceId, _setSourceId] = React.useState(null);
+  const [sourceId, _setSourceId] = React.useState(get(activeSource, "source_id", null));
 
   const setSourceId = React.useCallback(sid => {
     _setSourceId(sid);

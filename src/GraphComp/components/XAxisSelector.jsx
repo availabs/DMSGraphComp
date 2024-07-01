@@ -57,7 +57,7 @@ export const ColumnItem = ({ column }) => {
   )
 }
 
-const SortMethods = ["NONE", "ASC", "DESC"];
+const SortMethods = ["none", "ascending", "descending"];
 
 const XAxisColumnItem = ({ column, update }) => {
   const [hover, setHover] = React.useState(false);
@@ -116,7 +116,7 @@ export const XAxisSelector = ({ columns, xAxisColumn, setXAxisColumn, updateXAxi
   }, [xAxisColumn]);
 
   const doSetXAxisColumn = React.useCallback(col => {
-    setXAxisColumn({ ...col, sortMethod: "NONE" });
+    setXAxisColumn({ ...col, sortMethod: "none" });
     setHover(false);
   }, [xAxisColumn, setXAxisColumn]);
 

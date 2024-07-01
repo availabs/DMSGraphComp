@@ -32,6 +32,7 @@
     "@lexical/selection": "^0.13.1",
     "@lexical/table": "^0.13.1",
     "@lexical/utils": "^0.13.1",
+    "@observablehq/plot": "^0.6.15",
     "colorbrewer": "^1.5.6",
     "d3-array": "^3.2.4",
     "d3-axis": "^3.0.0",

@@ -18,7 +18,7 @@ import {
 
 import { enableAuth } from "@availabs/ams"
 
-console.log("CONFIG:", API_HOST, AUTH_HOST, PROJECT_NAME, CLIENT_HOST)
+// console.log("CONFIG:", API_HOST, AUTH_HOST, PROJECT_NAME, CLIENT_HOST)
 
 const AuthEnabledApp = enableAuth(App, { AUTH_HOST, PROJECT_NAME, CLIENT_HOST });
 

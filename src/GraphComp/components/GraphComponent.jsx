@@ -1,108 +1,142 @@
 import React from "react"
 
+import * as Plot from "@observablehq/plot";
 import get from "lodash/get"
-
-import {
-  BarGraph,
-  LineGraph
-} from "~/modules/avl-graph/src"
+import uniq from "lodash/uniq"
 
 import { getColorRange } from "~/modules/avl-graph/src"
+
+import { GraphTypes, getGraphComponent } from "./GraphComponents"
 
 export const DefaultPalette = getColorRange(12, "Set3");
 export const DefaultScaleRange = getColorRange(7, "RdYlGn");
 
 export const getNewGraphFormat = () => ({
-  title: "",
+  title: {
+    title: "",
+    position: "start",
+    fontSize: 32,
+    fontWeight: "bold"
+  },
   description: "",
+  bgColor: "#ffffff",
+  textColor: "#000000",
   data: [],
   colors: {
     type: "palette",
     value: [...DefaultPalette]
   },
   height: 300,
-  width: "full",
-  margin: {
-    top: 20,
-    right: 20,
-    bottom: 50,
-    left: 100
+  width: undefined,
+  margins: {
+    marginTop: 20,
+    marginRight: 20,
+    marginBottom: 50,
+    marginLeft: 100
   },
   xAxis: {
     label: "",
     rotateLabels: false,
-    tickDensity: 2
+    showGridLines: false,
+    tickSpacing: 1
   },
   yAxis: {
     label: "",
-    showGridLines: true
+    showGridLines: true,
+    tickFormat: "Integer"
+  },
+  legend: {
+    show: true,
+    label: "",
+    width: 300,
+    height: 50
+  },
+  tooltip: {
+    show: true,
+    fontSize: 12
   }
 })
 
-const GraphTypes = {
-  BarGraph,
-  LineGraph
-}
+const GraphTitle = ({ title, position, fontSize, fontWeight }) => {
 
-const ColorFuncs = {
-  BarGraph: (v, i, d, k) => d.colors[k],
-  LineGraph: (d, i) => d.color
-}
+  const justify = React.useMemo(() => {
+    return `justify-${ position }`;
+  }, [position]);
 
-export const GraphComponent = ({ graphFormat, activeGraphType, graphData, viewData }) => {
-
-  const GraphComp = React.useMemo(() => {
-    return GraphTypes[activeGraphType.GraphComp];
-  }, [activeGraphType]);
-
-  const colors = React.useMemo(() => {
-    const { domain: dataDomain } = graphData;
-    const type = get(graphFormat, ["colors", "type"], null);
-    switch (type) {
-      case "palette":
-        return get(graphFormat, ["colors", "value"], null);
-      case "scale":
-        const {
-          type,
-          range
-        } = get(graphFormat, ["colors", "value"], {});
-      default:
-        return [...DefaultPalette];
-    }
-  }, [graphFormat, graphData]);
-
-  return (
-    <div>
-
-      <div className="font-bold text-2xl text-center">
-        { get(graphFormat, ["title"]) }
-      </div>
-
+  return ! title ? null : (
+    <div className={ `w-full flex ${ justify } mb-4` }>
       <div style={ {
-          height: `${ get(graphFormat, ["height"]) }px`
+          fontSize: `${ fontSize }px`,
+          fontWeight
         } }
       >
+        { title }
+      </div>
+    </div>
+  )
+}
+
+export const GraphComponent = props => {
+
+  const {
+    graphFormat,
+    activeGraphType,
+    viewData
+  } = props;
+
+  const GraphComponent = React.useMemo(() => {
+    return getGraphComponent(activeGraphType.GraphComp);
+  }, [activeGraphType]);
+
+  const [ref, setRef] = React.useState(null);
+  const [width, setWidth] = React.useState(640);
+  React.useEffect(() => {
+    if (!ref) return;
+    const { width } = ref.getBoundingClientRect();
+    setWidth(width);
+  }, [ref]);
+
+  return (
+    <div ref={ setRef } className="w-full h-fit"
+      style={ {
+        backgroundColor: get(graphFormat, "bgColor", "#ffffff"),
+        color: get(graphFormat, "textColor", "#000000"),
+        padding: `${ get(graphFormat, "padding", 1) }rem`
+      } }
+    >
+      <GraphTitle { ...graphFormat.title }/>
+
+      <div className="h-fit">
         { !activeGraphType ? null :
-          <GraphComp { ...graphData }
-            colors={ ColorFuncs[activeGraphType.GraphComp] }
-            axisBottom={ {
+          <GraphComponent
+            data={ viewData }
+            title={ get(graphFormat, "title", "") }
+            height={ get(graphFormat, "height", 300) }
+            width={ get(graphFormat, "width", width) }
+            bgColor={ get(graphFormat, "bgColor", "#ffffff") }
+            textColor={ get(graphFormat, "textColor", "#ffffff") }
+            colors={ get(graphFormat, "colors") }
+
+            orientation={ get(graphFormat, "orientation", "vertical") }
+            groupMode={ get(graphFormat, "groupMode", "stacked") }
+
+            xAxis={ {
               label: get(graphFormat, ["xAxis", "label"]),
               rotateLabels: get(graphFormat, ["xAxis", "rotateLabels"], false),
-              tickDensity: +get(graphFormat, ["xAxis", "tickDensity"])
+              tickSpacing: get(graphFormat, ["xAxis", "tickSpacing"], true),
+              showGridLines: get(graphFormat, ["xAxis", "showGridLines"], true)
             } }
-            axisLeft={ {
+            yAxis={ {
               label: get(graphFormat, ["yAxis", "label"]),
-              showGridLines: get(graphFormat, ["yAxis", "showGridLines"], true)
+              rotateLabels: get(graphFormat, ["yAxis", "rotateLabels"], false),
+              showGridLines: get(graphFormat, ["yAxis", "showGridLines"], true),
+              tickFormat: get(graphFormat, ["yAxis", "tickFormat"], undefined)
             } }
-            margin={ {
-              top: +get(graphFormat, ["margin", "top"]),
-              right: +get(graphFormat, ["margin", "right"]),
-              bottom: +get(graphFormat, ["margin", "bottom"]),
-              left: +get(graphFormat, ["margin", "left"])
-            } }/>
+            margins={ get(graphFormat, "margins", {}) }
+            legend={ get(graphFormat, "legend", {}) }
+            tooltip={ get(graphFormat, "tooltip", {}) }/>
         }
       </div>
-
     </div>
   )
 }
