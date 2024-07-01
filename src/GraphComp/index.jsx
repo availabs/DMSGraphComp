@@ -228,6 +228,12 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     onChange(JSON.stringify({ state, viewData }));
   }, [onChange, state, viewData, okToSave]);
 
+  React.useEffect(() => {
+    if (okToSave) {
+      doOnChange();
+    }
+  }, [okToSave, doOnChange]);
+
   const canRevert = React.useMemo(() => {
     if (!value) return false;
     const parsed = JSON.parse(value);
@@ -280,45 +286,6 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
         graphFormat={ graphFormat }
         activeGraphType={ activeGraphType }
         viewData={ viewData }/>
-
-      <div className="grid grid-cols-12">
-        <div className="col-span-3 flex items-center justify-start">
-        </div>
-        <div className="col-span-6">
-          <button onClick={ doOnChange }
-            className={ `
-              w-full py-4 rounded
-              bg-white text-green-400
-              hover:bg-green-300
-              hover:text-white
-              disabled:text-red-400
-              disabled:opacity-50
-              disabled:hover:bg-white
-              disabled:cursor-not-allowed
-              font-bold text-xl
-            ` }
-            disabled={ !okToSave }
-          >
-            { okToSave ? "Save Graph" : "Nothing to Save" }
-          </button>
-        </div>
-        <div className="col-span-3 flex items-center justify-center">
-          <button onClick={ revertChanges }
-            className={ `
-              py-1 px-6 rounded bg-white
-              hover:bg-gray-300
-              hover:text-white
-              disabled:opacity-50
-              disabled:hover:bg-white
-              disabled:hover:text-current
-              disabled:cursor-not-allowed
-            ` }
-            disabled={ !canRevert }
-          >
-            Revert Changes
-          </button>
-        </div>
-      </div>
 
       <GraphOptionsEditor
         format={ graphFormat }
