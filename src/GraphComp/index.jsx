@@ -31,7 +31,7 @@ const IntFormat = d3format(",d");
 const parseJSON = (value) => {
   let json = {}
   try {
-    json = JSON.parse(value) 
+    json = JSON.parse(value)
   } catch (e) {
     console.log('no parse')
   }
@@ -48,16 +48,8 @@ const InitialState = {
   graphFormat: getNewGraphFormat()
 }
 
-<<<<<<< HEAD
 const getInitialState = value => {
-
-  const { state, viewData } = JSON.parse(value || "{}");
-
-=======
-const getInitialState = (value = "{}") => {
-  console.log('value', value, typeof value)
-  const parsed = parseJSON(value) || {};
->>>>>>> f828f4d0957f18661da28057b6fa09f15dbd7d28
+  const { state } = JSON.parse(value || "{}");
   return {
     activeSource: get(state, "activeSource", undefined),
     activeView: get(state, "activeView", undefined),
