@@ -2,6 +2,7 @@ import React from "react"
 
 import get from "lodash/get"
 import { range as d3range } from "d3-array"
+import colorbrewer from "colorbrewer"
 
 import { useFalcor } from "@availabs/avl-falcor"
 
