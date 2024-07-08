@@ -5,6 +5,36 @@ import { range as d3range } from "d3-array"
 
 import { useFalcor } from "@availabs/avl-falcor"
 
+const ColorRanges = {}
+
+for (const type in colorbrewer.schemeGroups) {
+  colorbrewer.schemeGroups[type].forEach(name => {
+    const group = colorbrewer[name];
+    for (const length in group) {
+      if (!(length in ColorRanges)) {
+        ColorRanges[length] = [];
+      }
+      ColorRanges[length].push({
+        type: `${ type[0].toUpperCase() }${ type.slice(1) }`,
+        name,
+        category: "Colorbrewer",
+        colors: group[length]
+      })
+    }
+  })
+}
+
+export { ColorRanges };
+
+export const getColorRange = (size, name, reverse=false) => {
+  let range = get(ColorRanges, [size], [])
+    .reduce((a, c) => c.name === name ? c.colors : a, []).slice();
+  if(reverse) {
+    range.reverse()
+  }
+  return range
+}
+
 const NaNValues = ["", null]
 
 export const strictNaN = v => {
@@ -85,6 +115,9 @@ export const useGetViews = ({ pgEnv, sourceId = null } = {}) => {
   }, [falcorCache, pgEnv, sourceId]);
 }
 
+const splitColumnName = cn => cn.split(/\s(?:as|AS)\s/);
+const cleanColumnName = cn => splitColumnName(cn)[0];
+
 export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, pgEnv }) => {
 
   const { falcor, falcorCache } = useFalcor();
@@ -95,14 +128,18 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, pgEnv })
     if (!xAxisColumn) return "{}";
     return JSON.stringify({
       aggregatedLen: true,
-      groupBy: [xAxisColumn.name]
+      groupBy: [cleanColumnName(xAxisColumn.name)]
     });
   }, [xAxisColumn]);
 
   const yColumnsMap = React.useMemo(() => {
     return yAxisColumns.reduce((a, c) => {
       const { name, aggMethod } = c;
-      a[`${ aggMethod }(${ name }) AS ${ name }`] = name;
+
+      const [sql, cn] = splitColumnName(name);
+console.log("????????????????", sql, cn)
+
+      a[`${ aggMethod }(${ sql }) AS ${ cn || sql }`] = cn || sql;
       return a;
     }, {});
   }, [yAxisColumns]);

@@ -234,21 +234,25 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     }
   }, [okToSave, doOnChange]);
 
-  const canRevert = React.useMemo(() => {
-    if (!value) return false;
-    const parsed = JSON.parse(value);
-    const valueState = get(parsed, "state", null);
-    return !isEqual(valueState, state);
-  }, [value, state]);
+console.log("COLUMNS:", columns);
+console.log("VIEW DATA:", viewData);
+console.log("GRAPH FORMAT:", graphFormat)
 
-  const revertChanges = React.useCallback(e => {
-    if (!canRevert) return;
-    const parsed = JSON.parse(value);
-    const valueState = get(parsed, "state", null);
-    if (valueState) {
-      setState(valueState);
-    }
-  }, [setState, value, canRevert]);
+  // const canRevert = React.useMemo(() => {
+  //   if (!value) return false;
+  //   const parsed = JSON.parse(value);
+  //   const valueState = get(parsed, "state", null);
+  //   return !isEqual(valueState, state);
+  // }, [value, state]);
+  //
+  // const revertChanges = React.useCallback(e => {
+  //   if (!canRevert) return;
+  //   const parsed = JSON.parse(value);
+  //   const valueState = get(parsed, "state", null);
+  //   if (valueState) {
+  //     setState(valueState);
+  //   }
+  // }, [setState, value, canRevert]);
 
   return (
     <div className="bg-gray-200 p-4 grid grid-cols-1 gap-2">
