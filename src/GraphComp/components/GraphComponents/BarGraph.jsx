@@ -123,9 +123,9 @@ const BarGraph = props => {
                   fontSize: tooltip.fontSize,
                   x: isVertical ? undefined : "value",
                   y: isVertical ? "value" : undefined,
-                  format: isVertical ?
-                    { [xAxis.label]: false, y: false } :
-                    { [yAxis.label]: false, x: false }
+                  // format: isVertical ?
+                  //   { [xAxis.label]: false, y: false } :
+                  //   { [yAxis.label]: false, x: false }
                 }
             }
           ) : (
@@ -138,9 +138,9 @@ const BarGraph = props => {
               tip: !tooltip.show ? undefined :
                 { fill: bgColor,
                   fontSize: tooltip.fontSize,
-                  format: isVertical ?
-                    { [xAxis.label]: false, y: false } :
-                    { [yAxis.label]: false, x: false }
+                  // format: isVertical ?
+                  //   { [xAxis.label]: false, y: false } :
+                  //   { [yAxis.label]: false, x: false }
                 }
             }
           )

@@ -18,6 +18,8 @@ import {
   GraphComponent,
   DefaultPalette,
 
+  GraphFilters,
+
   GraphTypes,
 
   XAxisSelector,
@@ -39,15 +41,6 @@ const parseJSON = (value) => {
   return json
 }
 
-const InitialState = {
-  activeSource: undefined,
-  activeView: undefined,
-  activeGraphType: GraphTypes[0],
-  xAxisColumn: undefined,
-  yAxisColumns: [],
-  graphFormat: getNewGraphFormat()
-}
-
 const getInitialState = value => {
   const { state } = JSON.parse(value || "{}");
   return {
@@ -56,7 +49,8 @@ const getInitialState = value => {
     activeGraphType: get(state, "activeGraphType", GraphTypes[0]),
     xAxisColumn: get(state, "xAxisColumn", undefined),
     yAxisColumns: get(state, "yAxisColumns", []),
-    graphFormat: get(state, "graphFormat", getNewGraphFormat())
+    graphFormat: get(state, "graphFormat", getNewGraphFormat()),
+    filters: get(state, "filters", [])
   }
 }
 
@@ -130,8 +124,16 @@ const Reducer = (state, action) => {
           graphFormat: merged
         }
       }
-      case "set-state":
-        return payload.state
+      case "add-filter":
+        return {
+          ...state,
+          filters: [...state.filters, payload.filter]
+        }
+      case "remove-filter":
+        return {
+          ...state,
+          filters: state.filters.filter(f => f !== payload.filter)
+        }
     default:
       return state;
   }
@@ -192,10 +194,16 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     })
   }, []);
 
-  const setState = React.useCallback(state => {
+  const addFilter = React.useCallback(filter => {
     dispatch({
-      type: "set-state",
-      state
+      type: "add-filter",
+      filter
+    })
+  }, []);
+  const removeFilter = React.useCallback(filter => {
+    dispatch({
+      type: "remove-filter",
+      filter
     })
   }, []);
 
@@ -205,14 +213,15 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     activeGraphType,
     xAxisColumn,
     yAxisColumns,
-    graphFormat
+    graphFormat,
+    filters
   } = state;
 
   const columns = React.useMemo(() => {
     return get(state, ["activeSource", "metadata", "value", "columns"]) || [];
   }, [activeSource]);
 
-  const [viewData, viewDataLength] = useGetViewData({ pgEnv, activeView, xAxisColumn, yAxisColumns });
+  const [viewData, viewDataLength] = useGetViewData({ pgEnv, activeView, xAxisColumn, yAxisColumns, filters });
 
   const dataDomain = React.useMemo(() => {
     return viewData.map(vd => vd.value);
@@ -233,26 +242,6 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
       doOnChange();
     }
   }, [okToSave, doOnChange]);
-
-console.log("COLUMNS:", columns);
-console.log("VIEW DATA:", viewData);
-console.log("GRAPH FORMAT:", graphFormat)
-
-  // const canRevert = React.useMemo(() => {
-  //   if (!value) return false;
-  //   const parsed = JSON.parse(value);
-  //   const valueState = get(parsed, "state", null);
-  //   return !isEqual(valueState, state);
-  // }, [value, state]);
-  //
-  // const revertChanges = React.useCallback(e => {
-  //   if (!canRevert) return;
-  //   const parsed = JSON.parse(value);
-  //   const valueState = get(parsed, "state", null);
-  //   if (valueState) {
-  //     setState(valueState);
-  //   }
-  // }, [setState, value, canRevert]);
 
   return (
     <div className="bg-gray-200 p-4 grid grid-cols-1 gap-2">
@@ -279,17 +268,28 @@ console.log("GRAPH FORMAT:", graphFormat)
       <XAxisSelector columns={ columns }
         xAxisColumn={ xAxisColumn }
         setXAxisColumn={ setXAxisColumn }
-        updateXAxisColumn={ updateXAxisColumn }/>
+        updateXAxisColumn={ updateXAxisColumn }
+        activeSource={ activeSource }/>
 
       <YAxisSelector columns={ columns }
         yAxisColumns={ yAxisColumns }
         setYAxisColumns={ setYAxisColumns }
-        updateYAxisColumn={ updateYAxisColumn }/>
+        updateYAxisColumn={ updateYAxisColumn }
+        activeSource={ activeSource }/>
 
       <GraphComponent
         graphFormat={ graphFormat }
         activeGraphType={ activeGraphType }
         viewData={ viewData }/>
+
+      <GraphFilters
+        columns={ columns }
+        viewData={ viewData }
+        filters={ filters }
+        addFilter={ addFilter }
+        removeFilter={ removeFilter }
+        activeView={ activeView }
+        pgEnv={ pgEnv }/>
 
       <GraphOptionsEditor
         format={ graphFormat }
