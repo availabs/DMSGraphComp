@@ -16,7 +16,8 @@ const LineGraph = props => {
     yAxis,
     colors,
     bgColor,
-    textColor,
+    legend,
+    tooltip
   } = props
 
   const [ref, setRef] = React.useState(null);
@@ -68,16 +69,21 @@ const LineGraph = props => {
           { x: "index",
             y: "value",
             stroke: "type",
-            sort: { x: "x", order: null }
+            sort: { x: "x", order: null },
+            tip: !tooltip.show ? undefined :
+              { fill: bgColor,
+                fontSize: tooltip.fontSize,
+                y: "value"
+              }
           }
         ),
-        Plot.tip(data,
-          Plot.pointerX({
-            x: "index",
-            y: "value",
-            fill: bgColor
-          })
-        )
+        // Plot.tip(data,
+        //   Plot.pointerX({
+        //     x: "index",
+        //     y: "value",
+        //     fill: bgColor
+        //   })
+        // )
       ]
     });
 
@@ -85,7 +91,7 @@ const LineGraph = props => {
 
     return () => plot.remove();
 
-  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors]);
+  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors, bgColor, legend, tooltip]);
 
   return (
     <div ref={ setRef }/>

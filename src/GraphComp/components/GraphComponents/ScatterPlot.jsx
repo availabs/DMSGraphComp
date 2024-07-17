@@ -12,15 +12,25 @@ const ScatterPlot = props => {
     margins,
     height,
     width,
-    title,
     xAxis,
     yAxis,
-    colors
+    colors,
+    bgColor,
+    legend,
+    tooltip
   } = props
 
   const [ref, setRef] = React.useState(null);
 
   const xAxisTicks = useAxisTicks(data, xAxis.tickSpacing);
+
+  const graphHeight = React.useMemo(() => {
+    const { marginTop: mt, marginBottom: mb } = margins;
+    if ((mt + mb) > height) {
+      return mt + mb + 100;
+    }
+    return height;
+  }, [height, margins]);
 
   React.useEffect(() => {
     if (!ref) return;
@@ -43,12 +53,14 @@ const ScatterPlot = props => {
         label: yAxis.label
       },
       color: {
-        legend: true,
+        legend: legend.show,
+        width: legend.width,
+        height: legend.height,
+        label: legend.label,
         range: colors.value
       },
-      height,
+      height: graphHeight,
       width,
-      title,
       ...margins,
       marks: [
         Plot.ruleY([0]),
@@ -58,14 +70,12 @@ const ScatterPlot = props => {
             y: "value",
             stroke: "type",
             sort: { x: "x", order: null },
-            tip: true
+            tip: !tooltip.show ? undefined :
+              { fill: bgColor,
+                fontSize: tooltip.fontSize,
+                y: "value"
+              }
           }
-        ),
-        Plot.tip(data,
-          Plot.pointer({
-            x: "index",
-            y: "value"
-          })
         ),
         Plot.crosshair(data,
           Plot.pointer({
@@ -80,7 +90,7 @@ const ScatterPlot = props => {
 
     return () => plot.remove();
 
-  }, [ref, data, margins, height, width, title, xAxisTicks, xAxis, yAxis, colors]);
+  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors, bgColor, legend, tooltip]);
 
   return (
     <div ref={ setRef }/>

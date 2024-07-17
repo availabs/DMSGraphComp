@@ -16,7 +16,6 @@ const BarGraph = props => {
     yAxis,
     colors,
     bgColor,
-    textColor,
     legend,
     tooltip,
     groupMode = "stacked",
@@ -107,7 +106,7 @@ const BarGraph = props => {
         rule([0]),
         bar(
           data,
-          groupMode === "stacked" ? (
+          isStacked ? (
             { x: isVertical ? "index" : "value",
               y: isVertical ? "value" : "index",
               fill: isPalette ? "type" : "value",
@@ -160,7 +159,7 @@ const BarGraph = props => {
 
     return () => plot.remove();
 
-  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors, isPalette]);
+  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors, bgColor, legend, tooltip, isPalette, isStacked, isVertical]);
 
   return (
     <div ref={ setRef }/>
