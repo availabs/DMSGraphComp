@@ -19,6 +19,7 @@ import {
   DefaultPalette,
 
   GraphFilters,
+  CategorySelector,
 
   GraphTypes,
 
@@ -50,90 +51,98 @@ const getInitialState = value => {
     xAxisColumn: get(state, "xAxisColumn", undefined),
     yAxisColumns: get(state, "yAxisColumns", []),
     graphFormat: get(state, "graphFormat", getNewGraphFormat()),
-    filters: get(state, "filters", [])
+    filters: get(state, "filters", []),
+    category: get(state, "category", null)
   }
 }
 
 const Reducer = (state, action) => {
   const { type, ...payload } = action;
   switch (type) {
-      case "set-active-source":
-        return {
-          ...state,
-          activeSource: payload.source,
-          xAxisColumn: undefined,
-          yAxisColumns: []
-        }
-      case "set-active-view":
-        return {
-          ...state,
-          activeView: payload.view
-        }
-      case "set-active-graph-type": {
-        const nextState = {
-          ...state,
-          activeGraphType: payload.graph
-        }
-        if ((payload.graph.type === "Line Graph") && (nextState.graphFormat.colors.type !== "palette")) {
-          nextState.graphFormat = {
-            ...nextState.graphFormat,
-            colors: {
-              type: "palette",
-              value: [...DefaultPalette]
-            }
+    case "set-active-source":
+      return {
+        ...state,
+        activeSource: payload.source,
+        xAxisColumn: undefined,
+        yAxisColumns: [],
+        filters: [],
+        category: null
+      }
+    case "set-active-view":
+      return {
+        ...state,
+        activeView: payload.view
+      }
+    case "set-active-graph-type": {
+      const nextState = {
+        ...state,
+        activeGraphType: payload.graph
+      }
+      if ((payload.graph.type === "Line Graph") && (nextState.graphFormat.colors.type !== "palette")) {
+        nextState.graphFormat = {
+          ...nextState.graphFormat,
+          colors: {
+            type: "palette",
+            value: [...DefaultPalette]
           }
         }
-        return nextState;
       }
-      case "set-x-axis-column":
-        return {
-          ...state,
-          xAxisColumn: payload.column
-        }
-      case "update-x-axis-column": {
-        const { update } = payload;
-        return {
-          ...state,
-          xAxisColumn: { ...state.xAxisColumn, ...update }
-        }
+      return nextState;
+    }
+    case "set-x-axis-column":
+      return {
+        ...state,
+        xAxisColumn: payload.column
       }
-      case "set-y-axis-columns":
-        return {
-          ...state,
-          yAxisColumns: payload.columns
-        }
-      case "update-y-axis-column": {
-        const { name, update } = payload;
-        return {
-          ...state,
-          yAxisColumns: state.yAxisColumns.map(col => {
-            if (col.name === name) {
-              return { ...col, ...update };
-            }
-            return col;
-          })
-        }
+    case "update-x-axis-column": {
+      const { update } = payload;
+      return {
+        ...state,
+        xAxisColumn: { ...state.xAxisColumn, ...update }
       }
-      case "edit-graph-format": {
-        const merged = merge({}, state.graphFormat);
-        payload.paths.forEach(([path, value]) => {
-          set(merged, path, value);
+    }
+    case "set-y-axis-columns":
+      return {
+        ...state,
+        yAxisColumns: payload.columns
+      }
+    case "update-y-axis-column": {
+      const { name, update } = payload;
+      return {
+        ...state,
+        yAxisColumns: state.yAxisColumns.map(col => {
+          if (col.name === name) {
+            return { ...col, ...update };
+          }
+          return col;
         })
-        return {
-          ...state,
-          graphFormat: merged
-        }
       }
-      case "add-filter":
-        return {
-          ...state,
-          filters: [...state.filters, payload.filter]
-        }
-      case "remove-filter":
-        return {
-          ...state,
-          filters: state.filters.filter(f => f !== payload.filter)
-        }
+    }
+    case "edit-graph-format": {
+      const merged = merge({}, state.graphFormat);
+      payload.paths.forEach(([path, value]) => {
+        set(merged, path, value);
+      })
+      return {
+        ...state,
+        graphFormat: merged
+      }
+    }
+    case "add-filter":
+      return {
+        ...state,
+        filters: [...state.filters, payload.filter]
+      }
+    case "remove-filter":
+      return {
+        ...state,
+        filters: state.filters.filter(f => f !== payload.filter)
+      }
+    case "set-category":
+      return {
+        ...state,
+        category: payload.category
+      }
     default:
       return state;
   }
@@ -207,6 +216,13 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     })
   }, []);
 
+  const setCategory = React.useCallback(category => {
+    dispatch({
+      type: "set-category",
+      category
+    })
+  }, []);
+
   const {
     activeSource,
     activeView,
@@ -214,14 +230,15 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
     xAxisColumn,
     yAxisColumns,
     graphFormat,
-    filters
+    filters,
+    category
   } = state;
 
   const columns = React.useMemo(() => {
     return get(state, ["activeSource", "metadata", "value", "columns"]) || [];
   }, [activeSource]);
 
-  const [viewData, viewDataLength] = useGetViewData({ pgEnv, activeView, xAxisColumn, yAxisColumns, filters });
+  const [viewData, viewDataLength] = useGetViewData({ pgEnv, activeView, xAxisColumn, yAxisColumns, filters, category });
 
   const dataDomain = React.useMemo(() => {
     return viewData.map(vd => vd.value);
@@ -288,6 +305,13 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
         filters={ filters }
         addFilter={ addFilter }
         removeFilter={ removeFilter }
+        activeView={ activeView }
+        pgEnv={ pgEnv }/>
+
+      <CategorySelector
+        columns={ columns }
+        category={ category }
+        setCategory={ setCategory }
         activeView={ activeView }
         pgEnv={ pgEnv }/>
 

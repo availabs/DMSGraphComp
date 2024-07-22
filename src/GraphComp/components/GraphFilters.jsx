@@ -6,6 +6,7 @@ import { Select } from "~/modules/avl-components/src"
 
 import { Button } from "./GraphOptionsEditor"
 import { useGetColumnDomain } from "./utils"
+import { getColumnDisplay } from "./XAxisSelector"
 
 const NoData = () => {
   return (
@@ -19,7 +20,8 @@ const columnName = c => c.name;
 
 const FilterTypes = [
   "equals",
-  "includes"
+  "includes",
+  "not equal"
 ]
 
 const intFormat = d3format(",d");
@@ -123,7 +125,7 @@ export const GraphFilters = props => {
           <Select
             placeholder="Select a column..."
             options={ Columns }
-            accessor={ c => c.name }
+            accessor={ getColumnDisplay }
             value={ selectedColumn }
             onChange={ setSelectedcolumn }/>
         }
