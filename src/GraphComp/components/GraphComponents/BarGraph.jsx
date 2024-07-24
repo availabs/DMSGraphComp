@@ -47,21 +47,21 @@ const BarGraph = props => {
   const xOptions = React.useMemo(() => {
     return isVertical ? ({
       type: "band",
-      label: xAxis.label,
+      axis: "bottom",
+      label: isStacked ? xAxis.label : null,
       grid: xAxis.showGridLines,
       textAnchor: xAxis.rotateLabels ? "start" : "middle",
       tickRotate: xAxis.rotateLabels ? 45 : 0,
-      axis: "bottom",
-      ticks: xAxisTicks
+      ticks: isStacked ? xAxisTicks : undefined
     }) : ({
       axis: "bottom",
       grid: yAxis.showGridLines,
       tickFormat: TickFormatOptionsMap[yAxis.tickFormat],
       textAnchor: yAxis.rotateLabels ? "start" : "middle",
       tickRotate: yAxis.rotateLabels ? 45 : 0,
-      label: yAxis.label
+      label: isStacked ? yAxis.label : null
     })
-  }, [isVertical, xAxis, yAxis, xAxisTicks]);
+  }, [isVertical, isStacked, xAxis, yAxis, xAxisTicks]);
 
   const yOptions = React.useMemo(() => {
     return isVertical ? ({
@@ -70,17 +70,33 @@ const BarGraph = props => {
       textAnchor: yAxis.rotateLabels ? "start" : "middle",
       tickRotate: yAxis.rotateLabels ? 45 : 0,
       tickFormat: TickFormatOptionsMap[yAxis.tickFormat],
-      label: yAxis.label
+      label: isStacked ? yAxis.label : null
     }) : ({
       type: "band",
-      label: xAxis.label,
+      axis: "left",
+      label: isStacked ? xAxis.label : null,
       grid: xAxis.showGridLines,
       textAnchor: xAxis.rotateLabels ? "start" : "middle",
       tickRotate: xAxis.rotateLabels ? 45 : 0,
-      axis: "left",
-      ticks: xAxisTicks
+      ticks: isStacked ? xAxisTicks : undefined
     })
-  }, [isVertical, xAxis, yAxis, xAxisTicks]);
+  }, [isVertical, isStacked, xAxis, yAxis, xAxisTicks]);
+
+  const fxOptions = React.useMemo(() => {
+    return isStacked || !isVertical ? undefined : {
+      axis: "top",
+      ticks: xAxisTicks,
+      label: xAxis.label
+    }
+  }, [isStacked, isVertical, xAxisTicks, xAxis]);
+
+  const fyOptions = React.useMemo(() => {
+    return isStacked || isVertical ? undefined : {
+      axis: "left",
+      ticks: xAxisTicks,
+      label: yAxis.label
+    }
+  }, [isStacked, isVertical, xAxisTicks, yAxis]);
 
   React.useEffect(() => {
     if (!ref) return;
@@ -88,7 +104,9 @@ const BarGraph = props => {
 
     const plot = Plot.plot({
       x: xOptions,
+      fx: fxOptions,
       y: yOptions,
+      fy: fyOptions,
       color: {
         legend: legend.show,
         width: legend.width,
@@ -110,22 +128,9 @@ const BarGraph = props => {
             { x: isVertical ? "index" : "value",
               y: isVertical ? "value" : "index",
               fill: isPalette ? "type" : "value",
-              sort: isVertical ? ({
-                x: "x",
-                order: null
-              }) : ({
-                y: "y",
-                order: null
-              }),
-              tip: !tooltip.show ? undefined :
-                { fill: bgColor,
-                  fontSize: tooltip.fontSize,
-                  x: isVertical ? undefined : "value",
-                  y: isVertical ? "value" : undefined,
-                  // format: isVertical ?
-                  //   { [xAxis.label]: false, y: false } :
-                  //   { [yAxis.label]: false, x: false }
-                }
+              sort: isVertical ?
+                      ({ x: "x", order: null }) :
+                      ({ y: "y", order: null }),
             }
           ) : (
             { x: isVertical ? "type" : "value",
@@ -133,14 +138,9 @@ const BarGraph = props => {
               y: isVertical ? "value" : "type",
               fy: isVertical ? undefined : "index",
               fill: isPalette ? "type" : "value",
-              sort: { fx: "x", order: null },
-              tip: !tooltip.show ? undefined :
-                { fill: bgColor,
-                  fontSize: tooltip.fontSize,
-                  // format: isVertical ?
-                  //   { [xAxis.label]: false, y: false } :
-                  //   { [yAxis.label]: false, x: false }
-                }
+              sort: isVertical ?
+                      ({ fx: "x", order: null }) :
+                      ({ fy: "y", order: null }),
             }
           )
         ),
@@ -159,7 +159,10 @@ const BarGraph = props => {
 
     return () => plot.remove();
 
-  }, [ref, data, margins, height, width, xAxisTicks, xAxis, yAxis, colors, bgColor, legend, tooltip, isPalette, isStacked, isVertical]);
+  }, [ref, data, margins, graphHeight, width, yAxis,
+      colors, legend, isPalette, isStacked, isVertical,
+      xOptions, yOptions, fxOptions, fyOptions]
+  );
 
   return (
     <div ref={ setRef }/>
@@ -177,11 +180,11 @@ export const BarGraphOption = {
       options: ["vertical", "horizontal"],
       defaultValue: "vertical"
     },
-    // { label: "Group Mode",
-    //   type: "select",
-    //   path: ["groupMode"],
-    //   options: ["stacked", "grouped"],
-    //   defaultValue: "stacked"
-    // }
+    { label: "Group Mode",
+      type: "select",
+      path: ["groupMode"],
+      options: ["stacked", "grouped"],
+      defaultValue: "stacked"
+    }
   ]
 }
