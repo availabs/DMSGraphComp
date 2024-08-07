@@ -297,7 +297,9 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
       <GraphComponent
         graphFormat={ graphFormat }
         activeGraphType={ activeGraphType }
-        viewData={ viewData }/>
+        viewData={ viewData }
+        showCategories={ Boolean(category) || (yAxisColumns.length > 1) }
+        xAxisColumn={ xAxisColumn }/>
 
       <GraphFilters
         columns={ columns }
@@ -319,7 +321,8 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
         format={ graphFormat }
         edit={ editGraphFormat }
         activeGraphType={ activeGraphType }
-        dataDomain={ dataDomain }/>
+        dataDomain={ dataDomain }
+        viewData={ viewData }/>
 
     </div>
   )
@@ -337,7 +340,10 @@ const ViewComp = ({ value }) => {
 
   const {
     graphFormat,
-    activeGraphType
+    activeGraphType,
+    category,
+    xAxisColumn,
+    yAxisColumns,
   } = state;
 
   if (!get(viewData, "length", 0)) {
@@ -348,12 +354,15 @@ const ViewComp = ({ value }) => {
     <GraphComponent
       graphFormat={ graphFormat }
       activeGraphType={ activeGraphType }
-      viewData={ viewData }/>
+      viewData={ viewData }
+      showCategories={ Boolean(category) || (yAxisColumns.length > 1) }
+      xAxisColumn={ xAxisColumn }/>
   )
 }
 
 const GraphComp = {
-  name: "Graph Component",
+  name: "DMS Graph Component",
+  type: "Graph",
   EditComp,
   ViewComp
 }

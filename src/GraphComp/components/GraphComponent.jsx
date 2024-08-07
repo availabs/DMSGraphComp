@@ -80,7 +80,9 @@ export const GraphComponent = props => {
   const {
     graphFormat,
     activeGraphType,
-    viewData
+    viewData,
+    showCategories,
+    xAxisColumn
   } = props;
 
   const GraphComponent = React.useMemo(() => {
@@ -114,6 +116,9 @@ export const GraphComponent = props => {
             width={ get(graphFormat, "width", width) }
             bgColor={ get(graphFormat, "bgColor", "#ffffff") }
             colors={ get(graphFormat, "colors") }
+
+            showCategories={ showCategories }
+            xAxisColumn={ xAxisColumn }
 
             orientation={ get(graphFormat, "orientation", "vertical") }
             groupMode={ get(graphFormat, "groupMode", "stacked") }

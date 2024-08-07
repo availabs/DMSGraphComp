@@ -130,21 +130,25 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
       aggregatedLen: true,
       groupBy: [cleanColumnName(xAxisColumn.name), cleanColumnName(get(category, "name", ""))].filter(Boolean),
       filter: filters.reduce((a, c) => {
-        a[cleanColumnName(c.column)] = c.values
+        a[cleanColumnName(c.column.name)] = c.values
         return a;
       }, {})
     });
   }, [xAxisColumn, filters, category]);
 
-  const yColumnsMap = React.useMemo(() => {
+  const [yColumnsMap, yColumnsDisplayNames] = React.useMemo(() => {
     return yAxisColumns.reduce((a, c) => {
-      const { name, aggMethod } = c;
+      const { name, aggMethod, display_name } = c;
 
       const [sql, cn] = splitColumnName(name);
 
-      a[`${ aggMethod }(${ sql }) AS ${ cn || sql }`] = cn || sql;
+      const key = `${ aggMethod }(${ sql }) AS ${ cn || sql }`;
+
+      a[0][key] = cn || sql;
+      a[1][key] = display_name || name;
+
       return a;
-    }, {});
+    }, [{}, {}]);
   }, [yAxisColumns]);
 
   React.useEffect(() => {
@@ -159,7 +163,7 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
     const vid = activeView.view_id;
 
     let length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
-    length = Math.min(length, 250);
+    // length = Math.min(length, 250);
 
     const columns = [
       get(xAxisColumn, "name", null),
@@ -181,28 +185,43 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
     const vid = activeView.view_id;
 
     let length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
-    length = Math.min(length, 250);
+    // length = Math.min(length, 250);
 
-    const catName = cleanColumnName(get(category, "name", ""));
+    const catName = get(category, "name", "");
 
     const data = d3range(length)
       .reduce((a, c) => {
         const data = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", c]);
+
         if (data) {
           for (const key in yColumnsMap) {
-            let type = catName ? data[catName] : yColumnsMap[key];
-            if (catName && (typeof type === "object")) {
-              type = "Unknown Category";
+
+            let index = data[xAxisColumn.name];
+            if ((typeof index === "object") && ("value" in index)) {
+              index = index.value;
             }
-            a.push({
-              index: data[xAxisColumn.name],
-              value: +data[key],
-              type
-            })
+
+            let value = data[key];
+            if ((typeof value === "object") && ("value" in value)) {
+              value = value.value;
+            }
+
+            let type = catName ? data[catName] : yColumnsDisplayNames[key];
+            if ((typeof type === "object") && ("value" in type)) {
+              type = type.value;
+            }
+
+            const label = yColumnsDisplayNames[key];
+
+            if (index && !strictNaN(value) && type) {
+              a.push({ index, value: +value, type, label });
+            }
           }
         }
         return a;
       }, []);
+
+// console.log("useGetViewData::data", data)
 
     const { sortMethod } = xAxisColumn;
 
@@ -218,7 +237,7 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
     }
 
     return [data, length];
-  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, category]);
+  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, yColumnsDisplayNames, category]);
 }
 
 export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
@@ -282,9 +301,6 @@ export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
     return d3range(length)
       .reduce((a, c) => {
         const data = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", c]);
-
-console.log("DATAAAAAAAAAAAAAAAAAAAAAAA????????????????", data);
-
         if (data) {
           a.push({
             value: data[column.name],
