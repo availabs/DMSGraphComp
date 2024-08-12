@@ -201,8 +201,8 @@ const BarGraph = props => {
         width: legend.width,
         height: legend.height,
         label: legend.label,
-        range: isPalette ? colors.value : colors.value.range,
         domain: colors.value.domain || undefined,
+        range: isPalette ? colors.value : colors.value.range,
         type: isPalette ? undefined : colors.value.type,
         tickFormat: isPalette ? undefined : TickFormatOptionsMap[yAxis.tickFormat]
       },

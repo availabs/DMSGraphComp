@@ -1,6 +1,7 @@
 import React from "react"
 
 import get from "lodash/get"
+import uniq from "lodash/uniq"
 import { range as d3range } from "d3-array"
 import colorbrewer from "colorbrewer"
 
@@ -119,7 +120,7 @@ export const useGetViews = ({ pgEnv, sourceId = null } = {}) => {
 const splitColumnName = cn => cn.split(/\s(?:as|AS)\s/);
 const cleanColumnName = cn => splitColumnName(cn)[0];
 
-export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters, pgEnv, category }) => {
+export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters, externalFilters, pgEnv, category }) => {
 
   const { falcor, falcorCache } = useFalcor();
 
@@ -128,13 +129,19 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
 
     return JSON.stringify({
       aggregatedLen: true,
-      groupBy: [cleanColumnName(xAxisColumn.name), cleanColumnName(get(category, "name", ""))].filter(Boolean),
+      groupBy: uniq([
+        cleanColumnName(xAxisColumn.name),
+        cleanColumnName(get(category, "name", "")),
+        ...externalFilters.map(f => cleanColumnName(f.column.name))
+      ].filter(Boolean)),
       filter: filters.reduce((a, c) => {
         a[cleanColumnName(c.column.name)] = c.values
         return a;
       }, {})
     });
-  }, [xAxisColumn, filters, category]);
+  }, [xAxisColumn, filters, externalFilters, category]);
+
+console.log("useGetViewData::options", JSON.parse(options));
 
   const [yColumnsMap, yColumnsDisplayNames] = React.useMemo(() => {
     return yAxisColumns.reduce((a, c) => {
@@ -168,15 +175,16 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
     const columns = [
       get(xAxisColumn, "name", null),
       ...Object.keys(yColumnsMap),
-      get(category, "name", null)
+      get(category, "name", null),
+      ...externalFilters.map(f => f.column.name)
     ].filter(Boolean);
 
     if (length && !strictNaN(length) && columns.length) {
       falcor.get([
         "dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", d3range(length), columns
-      ]);
+      ]).then(res => console.log("useGetViewData::res", res));
     }
-  }, [falcor, falcorCache, pgEnv, activeView, xAxisColumn, options, yColumnsMap, category]);
+  }, [falcor, falcorCache, pgEnv, activeView, xAxisColumn, options, yColumnsMap, externalFilters, category]);
 
   return React.useMemo(() => {
     if (!activeView) return [[], 0];
@@ -211,17 +219,26 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
               type = type.value;
             }
 
-            const label = yColumnsDisplayNames[key];
-
             if (index && !strictNaN(value) && type) {
-              a.push({ index, value: +value, type, label });
+              const viewData = { index, value: +value, type };
+
+              if (externalFilters.length) {
+                viewData.externalData = {};
+              }
+
+              externalFilters.forEach(f => {
+                viewData.externalData[f.column.name] = data[f.column.name];
+              })
+
+              a.push(viewData);
             }
           }
         }
+
         return a;
       }, []);
 
-// console.log("useGetViewData::data", data)
+console.log("useGetViewData::data", data)
 
     const { sortMethod } = xAxisColumn;
 
@@ -236,15 +253,12 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
       })
     }
 
-    return [data, length];
-  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, yColumnsDisplayNames, category]);
+    return [data, data.length];
+  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, yColumnsDisplayNames, externalFilters, category]);
 }
 
-export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
+export const useGetColumnDomain = ({ activeView, column, pgEnv, limit = 1000 }) => {
   const { falcor, falcorCache } = useFalcor();
-
-  const [dataLength, setDataLength] = React.useState(0);
-  const [data, setData] = React.useState([]);
 
   const options = React.useMemo(() => {
     if (!column) return "{}";
@@ -276,7 +290,7 @@ export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
     const vid = activeView.view_id;
 
     let length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
-    length = Math.min(1000, length);
+    length = Math.min(limit, length);
 
     const columns = [
       get(column, "name", null),
@@ -287,7 +301,7 @@ export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
         "dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", d3range(length), columns
       ]);
     }
-  }, [falcor, falcorCache, pgEnv, activeView, options, column, columnMap]);
+  }, [falcor, falcorCache, pgEnv, activeView, options, column, columnMap, limit]);
 
   return React.useMemo(() => {
     if (!activeView) return [];
@@ -296,16 +310,19 @@ export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
     const vid = activeView.view_id;
 
     let length = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "length"], 0);
-    length = Math.min(1000, length);
+    length = Math.min(limit, length);
 
     return d3range(length)
       .reduce((a, c) => {
         const data = get(falcorCache, ["dama", pgEnv, "viewsbyId", vid, "options", options, "databyIndex", c]);
         if (data) {
-          a.push({
-            value: data[column.name],
-            count: +data["COUNT(1) AS count"]
-          })
+          const value = get(data, [column.name, "value"], get(data, column.name))
+          if (value) {
+            a.push({
+              value,
+              count: +data["COUNT(1) AS count"]
+            })
+          }
         }
         return a;
       }, []).sort((a, b) => {
@@ -314,5 +331,5 @@ export const useGetColumnDomain = ({ activeView, column, pgEnv }) => {
         }
         return String(a.value).localeCompare(String(b.value));
       });
-  }, [falcorCache, pgEnv, activeView, options, column, columnMap])
+  }, [falcorCache, pgEnv, activeView, options, column, columnMap, limit])
 }

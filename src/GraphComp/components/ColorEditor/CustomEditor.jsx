@@ -34,7 +34,7 @@ const CustomEditor = ({ current, edit, legend, viewData }) => {
     }
   }, [edit, current, active]);
 
-  const domain = React.useMemo(() => {
+  const typeDomain = React.useMemo(() => {
     return uniq(viewData.map(d => d.type))
       .sort((a, b) => a.localeCompare(b));
   }, [viewData]);
@@ -44,8 +44,8 @@ const CustomEditor = ({ current, edit, legend, viewData }) => {
   }, [current.length]);
 
   const canAddNew = React.useMemo(() => {
-    return domain.length > current.length;
-  }, [domain.length, current.length])
+    return typeDomain.length > current.length;
+  }, [typeDomain.length, current.length])
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -85,7 +85,7 @@ const CustomEditor = ({ current, edit, legend, viewData }) => {
       <div>
         <div className="font-bold mt-2">Current Legend</div>
         <div className="flex flex-wrap max-h-48 overflow-auto">
-          { domain.map((d, i) => (
+          { typeDomain.map((d, i) => (
               <DomainItem key={ d }
                 value={ d }
                 color={ current[i % current.length] }
