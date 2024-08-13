@@ -141,9 +141,7 @@ export const useGetViewData = ({ activeView, xAxisColumn, yAxisColumns, filters,
     });
   }, [xAxisColumn, filters, externalFilters, category]);
 
-console.log("useGetViewData::options", JSON.parse(options));
-
-  const [yColumnsMap, yColumnsDisplayNames] = React.useMemo(() => {
+  const [yColumnsMap, yColumnsDisplayNames, aggMethods] = React.useMemo(() => {
     return yAxisColumns.reduce((a, c) => {
       const { name, aggMethod, display_name } = c;
 
@@ -153,9 +151,10 @@ console.log("useGetViewData::options", JSON.parse(options));
 
       a[0][key] = cn || sql;
       a[1][key] = display_name || name;
+      a[2][key] = aggMethod;
 
       return a;
-    }, [{}, {}]);
+    }, [{}, {}, {}]);
   }, [yAxisColumns]);
 
   React.useEffect(() => {
@@ -219,8 +218,10 @@ console.log("useGetViewData::options", JSON.parse(options));
               type = type.value;
             }
 
+            const aggMethod = aggMethods[key];
+
             if (index && !strictNaN(value) && type) {
-              const viewData = { index, value: +value, type };
+              const viewData = { index, value: +value, type, aggMethod };
 
               if (externalFilters.length) {
                 viewData.externalData = {};
@@ -254,7 +255,7 @@ console.log("useGetViewData::data", data)
     }
 
     return [data, data.length];
-  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, yColumnsDisplayNames, externalFilters, category]);
+  }, [falcorCache, pgEnv, activeView, options, xAxisColumn, yColumnsMap, yColumnsDisplayNames, externalFilters, category, aggMethods]);
 }
 
 export const useGetColumnDomain = ({ activeView, column, pgEnv, limit = 1000 }) => {

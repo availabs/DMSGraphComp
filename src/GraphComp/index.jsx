@@ -331,7 +331,8 @@ const EditComp = ({ onChange, value, pgEnv = "hazmit_dama" }) => {
         activeGraphType={ activeGraphType }
         viewData={ viewData }
         showCategories={ Boolean(category) || (yAxisColumns.length > 1) }
-        xAxisColumn={ xAxisColumn }/>
+        xAxisColumn={ xAxisColumn }
+        yAxisColumns={ yAxisColumns }/>
 
       <ExternalFilters
         columns={ columns }
@@ -483,7 +484,8 @@ const ViewComp = ({ value }) => {
         activeGraphType={ activeGraphType }
         viewData={ filteredData }
         showCategories={ Boolean(category) || (yAxisColumns.length > 1) }
-        xAxisColumn={ xAxisColumn }/>
+        xAxisColumn={ xAxisColumn }
+        yAxisColumns={ yAxisColumns }/>
     </div>
   )
 }
