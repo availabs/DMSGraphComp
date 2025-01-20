@@ -107,8 +107,9 @@ export const ColorEditor = ({ graphType, format, edit, editAll, dataDomain, view
             current={ format.colors.value }
             legend={ format.legend }
             edit={ edit }
-            editAll={ editAll }
-            viewData={ viewData }/> :
+            viewData={ viewData }
+            bgColor={ format.bgColor }
+            textColor={ format.textColor }/> :
         null
       }
     </div>

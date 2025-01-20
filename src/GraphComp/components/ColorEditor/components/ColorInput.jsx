@@ -17,7 +17,7 @@ const Slider = React.memo(() => {
   )
 })
 
-const ColorPicker = ({ onClick, color, ...props }) => {
+const ColorPicker = ({ onClick, color, large = false, preview = true, ...props }) => {
   const doOnClick = React.useCallback(e => {
     onClick(color);
   }, [onClick, color]);
@@ -30,22 +30,32 @@ const ColorPicker = ({ onClick, color, ...props }) => {
   }, []);
   return (
     <div>
-      <div className="h-16 grid grid-cols-12 gap-1">
-        <div className="col-span-10 relative cursor-pointer">
+      <div className={ `
+          ${ large ? "h-32" : "h-16"}
+          grid grid-cols-12 gap-1
+        ` }
+      >
+        <div className={ `
+            ${ preview ? "col-span-10" : "col-span-12" }
+            relative cursor-pointer
+          ` }
+        >
           <Saturation { ...props }
             color={ color }/>
         </div>
-        <div className="col-span-2 p-1">
-          <div onClick={ doOnClick }
-            className="w-full h-full cursor-pointer outline"
-            onMouseEnter={ onMouseEnter }
-            onMouseLeave={ onMouseLeave }
-            style={ {
-              backgroundColor: color,
-              outlineWidth: "0.25rem",
-              outlineColor: hovering ? color : "transparent"
-            } }/>
-        </div>
+        { !preview ? null :
+          <div className="col-span-2 p-1">
+            <div onClick={ doOnClick }
+              className="w-full h-full cursor-pointer outline"
+              onMouseEnter={ onMouseEnter }
+              onMouseLeave={ onMouseLeave }
+              style={ {
+                backgroundColor: color,
+                outlineWidth: "0.25rem",
+                outlineColor: hovering ? color : "transparent"
+              } }/>
+          </div>
+        }
       </div>
       <div className="h-2 relative mt-1 cursor-pointer">
         <Hue { ...props }

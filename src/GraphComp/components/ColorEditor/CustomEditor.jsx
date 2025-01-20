@@ -18,7 +18,7 @@ const ColorOptions = uniq(Object.values(ColorRanges)
     return a;
   }, [])).sort((a, b) => a.localeCompare(b));
 
-const CustomEditor = ({ current, edit, legend, viewData }) => {
+const CustomEditor = ({ current, edit, legend, viewData, bgColor, textColor }) => {
 
   const [active, setActive] = React.useState(null);
 
@@ -59,7 +59,22 @@ const CustomEditor = ({ current, edit, legend, viewData }) => {
           <Palette palette={ current } large/>
         </div>
 */}
-        <div className="font-bold mt-2">Select a Color</div>
+        <div className="grid grid-cols-2 mt-2 gap-2">
+          <div className="flex">
+            <div className="mr-2">Background Color:</div>
+            <ColorOption size="6"
+              color={ bgColor }
+              update={ updatePalette }/>
+          </div>
+          <div className="flex">
+            <div className="mr-2">Text Color:</div>
+            <ColorOption size="6"
+              color={ textColor }
+              update={ updatePalette }/>
+          </div>
+        </div>
+
+        <div className="font-bold">Select a Color</div>
         <div className="flex flex-wrap">
           { ColorOptions.map(color => (
               <ColorOption key={ color }
@@ -133,7 +148,7 @@ const ColorPick = ({ update }) => {
   )
 }
 
-const ColorOption = ({ color, update }) => {
+const ColorOption = ({ color, update, size = 4 }) => {
   const doUpdate = React.useCallback(e => {
     e.stopPropagation();
     update(color);
@@ -150,7 +165,7 @@ const ColorOption = ({ color, update }) => {
       onMouseEnter={ onMouseEnter }
       onMouseLeave={ onMouseLeave }
       className={ `
-        w-4 h-4 mb-2 mr-2 cursor-pointer outline
+        w-${ size } h-${ size } mb-2 mr-2 cursor-pointer outline
       ` }
       style={ {
         backgroundColor: color,

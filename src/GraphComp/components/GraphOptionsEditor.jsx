@@ -189,7 +189,9 @@ export const GraphOptionsEditor = ({ format, edit, activeGraphType, dataDomain, 
               <ColorSelector
                 editKey={ colorSelectorIsOpen }
                 edit={ doEdit }
-                current={ get(format, colorSelectorIsOpen) }/>
+                current={ get(format, colorSelectorIsOpen) }
+                palette={ palette }
+                label={ colorSelectorIsOpen === "bgColor" ? "Background" : "Grid / Text" }/>
             </div>
           </Modal>
 
